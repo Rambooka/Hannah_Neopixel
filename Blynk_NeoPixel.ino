@@ -41,17 +41,21 @@
 
 /////////////////////////////////////////////////////////////////////
 // setup
-#define DEF_Crawl_Length  3
+#define DEF_Crawl_Length   3
+#define DEF_Crawl_LengthB  4
 
 /////////////////////////////////////////////////////////////////////
 // Blynk App Project Token
-//char auth[] = "token";
+char auth[] = "b6854bc8eb854df3ad6947bb2c429749";
 
 /////////////////////////////////////////////////////////////////////
 // Network Setup
-//char ssid[] = "SSID";
-//char pass[] = "password"
-#include "Config.h"
+//char ssid[] = "HairOnRosebank_Customers";
+//char pass[] = ".MJ/(YGw*2\Zrn!M3.^U{rYup[Knh^3UfPLNVf\9<~L<7tsSUB6jy\k=t\6@rN";
+char ssid[] = "vodafone9D3F";
+char pass[] = "SQJ4Q6Q5JQCX2R";
+//char ssid[] = "futuremanufacturing";
+//char pass[] = "ThisProductContainsLead2016";
 
 /////////////////////////////////////////////////////////////////////
 #define NeoPin 14         // D14 (SCL pin on SparkFun EPS8266 Thing)  NOTE: DON'T USE PIN 16 (XPD) FOR NEOPIXELS
@@ -68,11 +72,11 @@ U08 Anim_Colour_Green;
 U08 Anim_Colour_Blue;
 
 U16 Animation    = 1;
-U16 Offset       = 0;
+U16 Offset1      = 0;
+U16 Offset2      = 0;
 U16 Speed        = 3;
 U16 SpeedCounter = 0;
 FLG Direction    = 0;
-FLG NewAnimation = 0; // =1 when Animation is changed. Allows animation to setup itself
 FLG used[NeoNum];     // array to keep track of lit LEDs
 int lights;
 float Angle;
@@ -106,73 +110,66 @@ void UpdateAnimation()
     SpeedCounter = 0;
 
     // blank line to show new data easily to user
-    Serial.println("Update Animation..." );
+    Serial.print  ("Update Animation, " );
+    Serial.print  ("Animation is: ");
+    Serial.println(Animation);
 
     // what animation are we running
     switch ( Animation ) {
       case 1 : {
           // rainbow
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
           Speed = 2;
 
           // make the animation
           for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-            strip.setPixelColor(Index, Wheel((Offset + Index) * 3));
+            strip.setPixelColor(Index, Wheel((Offset1 + Index) * 3));
           }
           strip.show();
 
           // make a Rainbow of color
-          Offset++;
+          Offset1++;
           break;
         }
       case 2 : {
           // cylon / Knight Rider
-          if ( NewAnimation == 1 ) {
-            // setup
-          }
           Speed = 0;
 
           if ( Direction == 0 ) {
-            if ( ++Offset >= strip.numPixels() ) {
-              Offset    = strip.numPixels();
+            if ( ++Offset1 >= strip.numPixels() ) {
+              Offset1    = strip.numPixels();
               Direction = 1;
             }
           } else {
-            if ( --Offset == 0 ) {
-              Offset    = 0;
+            if ( --Offset1 == 0 ) {
+              Offset1    = 0;
               Direction = 0;
             }
           }
 
           strip.clear();
-          strip.setPixelColor(Offset    , Anim_Colour);
-          strip.setPixelColor(Offset - 1, Anim_Colour_Red / 4, Anim_Colour_Green / 4, Anim_Colour_Blue / 4);
-          strip.setPixelColor(Offset + 1, Anim_Colour_Red / 4, Anim_Colour_Green / 4, Anim_Colour_Blue / 4);
-          strip.setPixelColor(Offset - 2, Anim_Colour_Red / 5, Anim_Colour_Green / 5, Anim_Colour_Blue / 5);
-          strip.setPixelColor(Offset + 2, Anim_Colour_Red / 5, Anim_Colour_Green / 5, Anim_Colour_Blue / 5);
+          strip.setPixelColor(Offset1    , Anim_Colour);
+          strip.setPixelColor(Offset1 - 1, Anim_Colour_Red / 4, Anim_Colour_Green / 4, Anim_Colour_Blue / 4);
+          strip.setPixelColor(Offset1 + 1, Anim_Colour_Red / 4, Anim_Colour_Green / 4, Anim_Colour_Blue / 4);
+          strip.setPixelColor(Offset1 - 2, Anim_Colour_Red / 5, Anim_Colour_Green / 5, Anim_Colour_Blue / 5);
+          strip.setPixelColor(Offset1 + 2, Anim_Colour_Red / 5, Anim_Colour_Green / 5, Anim_Colour_Blue / 5);
           strip.show();
           break;
         }
       case 3 :  {
           // crawling lights forward
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
           Speed = 4;
 
-          if ( ++Offset >= DEF_Crawl_Length ) {
-            Offset = 0;
+          if ( ++Offset1 >= DEF_Crawl_Length ) {
+            Offset1 = 0;
           }
 
           // calc the data
           for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-            if ( ++Offset >= DEF_Crawl_Length ) {
-              Offset = 0;
+            if ( ++Offset1 >= DEF_Crawl_Length ) {
+              Offset1 = 0;
             }
 
-            if ( Offset == 0 ) {
+            if ( Offset1 == 0 ) {
               strip.setPixelColor(Index, Anim_Colour);
             } else {
               strip.setPixelColor(Index, 0);
@@ -184,26 +181,23 @@ void UpdateAnimation()
         }
       case 4 :  {
           // crawling lights backward
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
           Speed = 4;
 
-          if ( Offset == 0 ) {
-            Offset = DEF_Crawl_Length;
+          if ( Offset1 == 0 ) {
+            Offset1 = DEF_Crawl_Length;
           } else {
-            Offset--;
+            Offset1--;
           }
 
           // calc the data
           for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-            if ( Offset == 0 ) {
-              Offset = DEF_Crawl_Length;
+            if ( Offset1 == 0 ) {
+              Offset1 = DEF_Crawl_Length;
             } else {
-              Offset--;
+              Offset1--;
             }
 
-            if ( Offset == 0 ) {
+            if ( Offset1 == 0 ) {
               strip.setPixelColor(Index, Anim_Colour);
             } else {
               strip.setPixelColor(Index, 0);
@@ -215,26 +209,23 @@ void UpdateAnimation()
         }
       case 5 :  {
           // crawling lights backward
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
           Speed = 4;
 
-          if ( Offset == 0 ) {
-            Offset = DEF_Crawl_Length;
+          if ( Offset1 == 0 ) {
+            Offset1 = DEF_Crawl_Length;
           } else {
-            Offset--;
+            Offset1--;
           }
 
           // calc the data
           for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-            if ( Offset == 0 ) {
-              Offset = DEF_Crawl_Length;
+            if ( Offset1 == 0 ) {
+              Offset1 = DEF_Crawl_Length;
             } else {
-              Offset--;
+              Offset1--;
             }
 
-            if ( Offset == 0 ) {
+            if ( Offset1 == 0 ) {
               strip.setPixelColor(Index, random(0, 255),  random(0, 255),  random(0, 255));
             } else {
               strip.setPixelColor(Index, 0);
@@ -246,9 +237,6 @@ void UpdateAnimation()
         }
       case 6 :  {
           // random -> twinkle
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
           Speed = 2;
 
           // calc the data
@@ -261,9 +249,6 @@ void UpdateAnimation()
         }
       case 7 : {
           // Fire
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
           Speed = 2;
 
           int r = 255;
@@ -285,41 +270,22 @@ void UpdateAnimation()
         }
       case 8 : {
           // alternate
-          if ( NewAnimation == 1 ) {
-            // Setup
-          }
-          Speed = 2;
+          Speed = 4;
 
-          if ( Direction == 0 ) {
-            Direction = 1;
-            for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-              if (Index % 2 == 0) { // set even LED to color 1
-                strip.setPixelColor(Index, Anim_Colour);
-              } else { // set odd LED to color 2
-                strip.setPixelColor(Index, Anim_Colour_Red / 4, Anim_Colour_Green / 4, Anim_Colour_Blue / 4);
-              }
-            }
-          } else {
-            Direction = 0;
-            for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-              if (Index % 2 == 0) { // set even LED to color 2
-                strip.setPixelColor(Index, Anim_Colour_Red / 4, Anim_Colour_Green / 4, Anim_Colour_Blue / 4);
-              } else { // set odd LED to color 1
-                strip.setPixelColor(Index, Anim_Colour);
-              }
+          Direction++;
+          for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+            Direction++;
+            if ( (Direction & 1) == 0) {
+              strip.setPixelColor(Index, Anim_Colour);
+            } else { // set odd LED to color 2
+              strip.setPixelColor(Index, Anim_Colour_Red / 5, Anim_Colour_Green / 5, Anim_Colour_Blue / 5);
             }
           }
           strip.show();
           break;
         }
       case 9 : {
-          if ( NewAnimation == 1 ) {
-            // Setup
-            for ( Index = 0; Index < strip.numPixels(); Index++ ) { // fill array with 0
-              used[Index] = 0;
-            }
-          }
-
+          // Random Fill
           FLG any = 1;
           for ( Index = 0; Index < strip.numPixels(); Index++ ) { // fill array with 0
             any &= used[Index] == 1;
@@ -350,10 +316,11 @@ void UpdateAnimation()
           break;
         }
       case 10 : {
+          // sin colours
           Speed = 2;
 
-          if ( Offset++ > strip.numPixels() ) {
-            Offset = 0;
+          if ( Offset1++ > strip.numPixels() ) {
+            Offset1 = 0;
           }
 
           for (Index = 0; Index < strip.numPixels(); Index++) {
@@ -368,39 +335,42 @@ void UpdateAnimation()
           break;
         }
       case 11 : {
+          // all Red
           Speed = 0;
-          if ( ++Offset > 255) {
-            Offset = 0;
+          if ( ++Offset1 > 255) {
+            Offset1 = 0;
           }
           for (Index = 0; Index < strip.numPixels(); Index++) {
 
-            strip.setPixelColor(Index, Offset, 0, 0);
+            strip.setPixelColor(Index, Offset1, 0, 0);
           }
           strip.show();
 
           break;
         }
       case 12 : {
+          // all Green
           Speed = 0;
-          if ( ++Offset > 255) {
-            Offset = 0;
+          if ( ++Offset1 > 255) {
+            Offset1 = 0;
           }
           for (Index = 0; Index < strip.numPixels(); Index++) {
 
-            strip.setPixelColor(Index, 0, Offset, 0);
+            strip.setPixelColor(Index, 0, Offset1, 0);
           }
           strip.show();
 
           break;
         }
       case 13 : {
+          // All Blue
           Speed = 0;
-          if ( ++Offset > 255) {
-            Offset = 0;
+          if ( ++Offset1 > 255) {
+            Offset1 = 0;
           }
 
           for (Index = 0; Index < strip.numPixels(); Index++) {
-            strip.setPixelColor(Index, 0, 0, Offset);
+            strip.setPixelColor(Index, 0, 0, Offset1);
           }
           strip.show();
 
@@ -408,27 +378,68 @@ void UpdateAnimation()
         }
       case 14 : {
           // Light up the strip starting from the middle
-          if ( Offset++ > strip.numPixels() / 2 ) {
+          if ( Offset1++ > strip.numPixels() / 2 ) {
             strip.clear();
-            Offset = 0;
+            Offset1 = 0;
             Anim_Colour = strip.Color(random(0, 255), random(0, 255), random(0, 255));
           }
 
-          strip.setPixelColor(strip.numPixels() / 2 + Offset, Anim_Colour);
-          strip.setPixelColor(strip.numPixels() / 2 - Offset, Anim_Colour);
+          strip.setPixelColor(strip.numPixels() / 2 + Offset1, Anim_Colour);
+          strip.setPixelColor(strip.numPixels() / 2 - Offset1, Anim_Colour);
           strip.show();
           break;
         }
       case 15 : {
-          // Light up the strip starting from the middle
-          if ( Offset++ > strip.numPixels() / 2 ) {
+          // Light up the strip starting from the ends
+          if ( Offset1++ > strip.numPixels() / 2 ) {
             strip.clear();
-            Offset = 0;
+            Offset1 = 0;
             Anim_Colour = strip.Color(random(0, 255), random(0, 255), random(0, 255));
           }
 
-          strip.setPixelColor(Offset, Anim_Colour);
-          strip.setPixelColor(strip.numPixels() - Offset, Anim_Colour);
+          strip.setPixelColor(Offset1, Anim_Colour);
+          strip.setPixelColor(strip.numPixels() - Offset1, Anim_Colour);
+          strip.show();
+          break;
+        }
+      case 16 :  {
+          // crawling lights backward and backwards
+          Speed = 4;
+
+          if ( Offset1 == 0 ) {
+            Offset1 = DEF_Crawl_LengthB;
+          } else {
+            Offset1--;
+          }
+          if ( ++Offset2 >= DEF_Crawl_LengthB ) {
+            Offset2 = 0;
+          }
+
+          // calc the data
+          strip.clear();
+          for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+            if ( Offset1 == 0 ) {
+              Offset1 = DEF_Crawl_LengthB;
+            } else {
+              Offset1--;
+            }
+            if ( ++Offset2 >= DEF_Crawl_LengthB ) {
+              Offset2 = 0;
+            }
+
+            if ( Offset1 == 0 ) {
+              strip.setPixelColor(Index, Anim_Colour);
+            }
+            if ( Offset2 == 1 ) {
+              if ( strip.getPixelColor(Index) == Anim_Colour ) {
+                strip.setPixelColor(Index, Anim_Colour | 0xFF0000);
+              } else {
+                // unique
+                strip.setPixelColor(Index, 255, 0, 0);
+              }
+            }
+          }
+          
           strip.show();
           break;
         }
@@ -436,11 +447,9 @@ void UpdateAnimation()
           // ensure that we are always correct
           Animation = 1;
         }
+
     }
   }
-
-  // init completed
-  NewAnimation = 0;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -453,16 +462,21 @@ BLYNK_CONNECTED() {
 BLYNK_WRITE(V1)
 {
   Animation    = param.asInt();  // first index = 1
-  NewAnimation = 1;
 
   // reset the Anim SETUP
-  Offset       = 0;
+  Offset1      = 0;
+  Offset2      = 0;
   Speed        = 0;
   SpeedCounter = 0;
   Direction    = 0;
   Angle        = 0.0F;
 
   strip.clear();
+
+  U16 Index;
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) { // fill array with 0
+    used[Index] = 0;
+  }
 
   Serial.print  ("New Animation is: ");
   Serial.println(Animation);
