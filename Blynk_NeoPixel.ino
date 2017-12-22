@@ -354,6 +354,141 @@ void AH_CrawlRandom         (void)
 
     if ( Offset1 == 0 ) {
       strip.setPixelColor(Index, random(0, 255),  random(0, 255),  random(0, 255));
+=======
+
+  if ( Offset1 == 0 ) {
+    Offset1 = DEF_Crawl_Length;
+  } else {
+    Offset1--;
+    } else {
+      strip.setPixelColor(Index, 0);
+    }
+  }
+
+  strip.show();
+<<<<<<< HEAD
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_Twinkle             (void)
+{
+  // random -> twinkle
+  U16 Index;
+  Speed = 2;
+
+  // calc the data
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+    strip.setPixelColor(Index, random(0, 255),  random(0, 255),  random(0, 255));
+  }
+
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_Fire                (void)
+{
+  // Fire
+  U16 Index;
+  Speed = 2;
+
+  int r = 255;
+  int g = r - 40;
+  int b = 40;
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+    int flicker = random(0, 150);
+    int r1 = r - flicker;
+    int g1 = g - flicker;
+    int b1 = b - flicker;
+    if (g1 < 0) g1 = 0;
+    if (r1 < 0) r1 = 0;
+    if (b1 < 0) b1 = 0;
+    strip.setPixelColor(Index, r1, g1, b1);
+  }
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_Alternate           (void)
+{
+  // alternate
+  U16 Index;
+  Speed = 4;
+
+  Direction++;
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+    Direction++;
+    if ( (Direction & 1) == 0) {
+      // set even LED to color 1
+      strip.setPixelColor(Index, Anim1_Colour);
+    } else {
+      // set odd LED to color 2
+      strip.setPixelColor(Index, Anim2_Colour);
+    }
+  }
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_FillRandom          (void)
+{
+  // Random Fill
+  U16 Index;
+  FLG any = 1;
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) { // fill array with 0
+    any &= LEDs[Index] == 1;
+  }
+
+  if ( any == 1 ) {
+    Serial.println("Start Over");
+    // all on, so start again
+    strip.clear();
+
+    for (Index = 0; Index < strip.numPixels(); Index++) { // fill array with 0
+      LEDs[Index] = 0;
+    }
+  } else {
+    // find another spot to fill
+    FLG Found = 0;
+    do {
+      Index = random(0, strip.numPixels()); // pick a random LED
+      if ( LEDs[Index] == 0 ) {
+        strip.setPixelColor(Index, Anim1_Colour);
+        LEDs[Index] = 1; // update array to remember it is lit
+        Found = 10;
+      }
+    } while ( ++Found < 10 ) ;
+  }
+
+  strip.show(); // display
+}
+
+/////////////////////////////////////////////////////////////////////
+=======
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_CrawlRandom         (void)
+{
+  // crawling lights backward with random colour
+  U16 Index;
+  Speed = 4;
+
+  if ( Offset1 == 0 ) {
+    Offset1 = DEF_Crawl_Length;
+  } else {
+    Offset1--;
+  }
+
+  // calc the data
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+    if ( Offset1 == 0 ) {
+      Offset1 = DEF_Crawl_Length;
+    } else {
+      Offset1--;
+    }
+
+    if ( Offset1 == 0 ) {
+      strip.setPixelColor(Index, random(0, 255),  random(0, 255),  random(0, 255));
     } else {
       strip.setPixelColor(Index, 0);
     }
@@ -456,6 +591,7 @@ void AH_FillRandom          (void)
 }
 
 /////////////////////////////////////////////////////////////////////
+>>>>>>> 160d988b8508e718bef43e247f2435a9a5c512d5
 void AH_RandomClear        (void)
 {
   // random colours with random clear
@@ -668,6 +804,7 @@ void AH_police_lightsALL(void)
   strip.show();
 }
 
+<<<<<<< HEAD
 /////////////////////////////////////////////////////////////////////
 void AH_2ColourFader(void)
 {
@@ -686,6 +823,8 @@ void AH_2ColourFader(void)
 
   strip.show();
 }
+=======
+>>>>>>> 160d988b8508e718bef43e247f2435a9a5c512d5
 
 /////////////////////////////////////////////////////////////////////
 typedef void ANIM_HANDLER ( void );
@@ -714,13 +853,21 @@ static ANIM_HANDLER * const AnimationHandlers[] = {
   &AH_Rainbow_Loop,
   &AH_Police_LightsONE,
   &AH_police_lightsALL,
+<<<<<<< HEAD
   &AH_2ColourFader,
+=======
+>>>>>>> 160d988b8508e718bef43e247f2435a9a5c512d5
 };
 
 /////////////////////////////////////////////////////////////////////
 // update Animation
 void UpdateAnimation()
 {
+<<<<<<< HEAD
+=======
+  int Index;
+
+>>>>>>> 160d988b8508e718bef43e247f2435a9a5c512d5
   // blank line to show new data easily to user
   Serial.print  ("Update Animation: " );
   Serial.println(Animation);
@@ -813,9 +960,41 @@ BLYNK_WRITE(V3)
 
   // combined
   Anim2_Colour = strip.Color(Anim2_Colour_Red, Anim2_Colour_Green, Anim2_Colour_Blue);
+=======
+  Anim1_Colour_Red   = param[0].asInt();
+  Anim1_Colour_Green = param[1].asInt();
+  Anim1_Colour_Blue  = param[2].asInt();
+
+  // combined
+  Anim1_Colour = strip.Color(Anim1_Colour_Red, Anim1_Colour_Green, Anim1_Colour_Blue);
+>>>>>>> 160d988b8508e718bef43e247f2435a9a5c512d5
 
   Serial.print("New Animation Colour 2 is: ");
   Serial.print(" Red: ");
+<<<<<<< HEAD
+=======
+  Serial.print(Anim1_Colour_Red);
+  Serial.print(" Green: ");
+  Serial.print(Anim1_Colour_Green);
+  Serial.print(" Blue: ");
+  Serial.println(Anim1_Colour_Blue );
+}
+
+/////////////////////////////////////////////////////////////////////
+// Change the Secondary colour of the Animation
+BLYNK_WRITE(V3)
+{
+  // as colours
+  Anim2_Colour_Red   = param[0].asInt();
+  Anim2_Colour_Green = param[1].asInt();
+  Anim2_Colour_Blue  = param[2].asInt();
+
+  // combined
+  Anim2_Colour = strip.Color(Anim2_Colour_Red, Anim2_Colour_Green, Anim2_Colour_Blue);
+
+  Serial.print("New Secondary Animation Colour is: ");
+  Serial.print(" Red: ");
+>>>>>>> 160d988b8508e718bef43e247f2435a9a5c512d5
   Serial.print(Anim2_Colour_Red);
   Serial.print(" Green: ");
   Serial.print(Anim2_Colour_Green);
