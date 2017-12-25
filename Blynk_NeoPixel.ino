@@ -86,6 +86,15 @@ U16 Speed        = 2;
 U16 SpeedCounter = 0;
 U16 Direction    = 0;
 
+FLG OverlayNightRider   = 0;
+U16 Direction_NR        = 0;
+U16 Offset_NR           = 0;
+U32 AnimNR_Colour       = 0;
+U08 AnimNR_Colour_Red   = 255;
+U08 AnimNR_Colour_Green = 0;
+U08 AnimNR_Colour_Blue  = 0;
+U32 PixelsNR[NeoNum];
+
 U16 idex = 0;        //-LED INDEX (0 to NUM_LEDS-1
 U16 idx_offset = 0;  //-OFFSET INDEX (BOTTOM LED TO ZERO WHEN LOOP IS TURNED/DOESN'T REALLY WORK)
 U16 ihue = 0;        //-HUE (0-360)
@@ -159,30 +168,6 @@ void HSVtoRGB(int hue, int sat, int val, int colors[3]) {
 }
 
 /////////////////////////////////////////////////////////////////////
-void copy_led_array(void) {
-  for (int i = 0; i < strip.numPixels(); i++ ) {
-    LEDs[i] = strip.getPixelColor(i);
-  }
-}
-
-/////////////////////////////////////////////////////////////////////
-//-FIND INDEX OF HORIZONAL OPPOSITE LED
-int horizontal_index(int i)
-{
-  //-ONLY WORKS WITH INDEX < TOPINDEX
-  if (i == BOTTOM_INDEX) {
-    return BOTTOM_INDEX;
-  }
-  if (i == TOP_INDEX && EVENODD == 1) {
-    return TOP_INDEX + 1;
-  }
-  if (i == TOP_INDEX && EVENODD == 0) {
-    return TOP_INDEX;
-  }
-  return strip.numPixels() - i;
-}
-
-/////////////////////////////////////////////////////////////////////
 //-FIND INDEX OF ANTIPODAL OPPOSITE LED
 int antipodal_index(int i)
 {
@@ -194,30 +179,54 @@ int antipodal_index(int i)
 }
 
 /////////////////////////////////////////////////////////////////////
-//-FIND ADJACENT INDEX CLOCKWISE
-int adjacent_cw(int i)
+void Overlay_NightRider(FLG JustMerge)
 {
-  int r;
-  if (i < strip.numPixels() - 1) {
-    r = i + 1;
-  }
-  else {
-    r = 0;
-  }
-  return r;
-}
+  Serial.print  ("Add Night Rider offset: ");
+  Serial.println(Offset_NR);
 
-/////////////////////////////////////////////////////////////////////
-//-FIND ADJACENT INDEX COUNTER-CLOCKWISE
-int adjacent_ccw(int i) {
-  int r;
-  if (i > 0) {
-    r = i - 1;
+  // cylon / Knight Rider
+  if ( Direction_NR == 0 ) {
+    if ( ++Offset_NR >= strip.numPixels() ) {
+      Offset_NR    = strip.numPixels();
+      Direction_NR = 1;
+    }
+  } else {
+    if ( --Offset_NR == 0 ) {
+      Offset_NR    = 0;
+      Direction_NR = 0;
+    }
   }
-  else {
-    r = strip.numPixels() - 1;
+
+  // remove
+  if ( JustMerge == 0 ) {
+    for ( int Index = 0; Index < strip.numPixels(); Index++) {
+      strip.setPixelColor(Index, strip.getPixelColor(Index) ^ PixelsNR[Index]);
+    }
   }
-  return r;
+
+  // clear old amination data
+  for ( int Index = 0; Index < strip.numPixels(); Index++) {
+    PixelsNR[Index] = 0;
+  }
+
+  PixelsNR[Offset_NR] = AnimNR_Colour;
+  if ( Offset_NR > 1 ) {
+    PixelsNR[Offset_NR - 1] = AnimNR_Colour;
+  }
+  if ( Offset_NR < (strip.numPixels() - 1) ) {
+    PixelsNR[Offset_NR + 1] = AnimNR_Colour;
+  }
+  if ( Offset_NR > 2 ) {
+    PixelsNR[Offset_NR - 2] = AnimNR_Colour;
+  }
+  if ( Offset_NR < (strip.numPixels() - 2) ) {
+    PixelsNR[Offset_NR + 2] = AnimNR_Colour;
+  }
+
+  // merge
+  for ( int Index = 0; Index < strip.numPixels(); Index++) {
+    strip.setPixelColor(Index, strip.getPixelColor(Index) ^ PixelsNR[Index]);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -226,24 +235,6 @@ void AH_OFF(void)
   Speed = 50;
   strip.clear();
   strip.show();
-}
-
-/////////////////////////////////////////////////////////////////////
-void AH_Rainbow(void)
-{
-  U16 Index;
-
-  // rainbow
-  Speed = 2;
-
-  // make the animation
-  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
-    strip.setPixelColor(Index, Wheel((Offset1 + Index) * 3));
-  }
-  strip.show();
-
-  // make a Rainbow of color
-  Offset1++;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -274,7 +265,30 @@ void AH_NightRider(void)
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_CrawlForward        (void)
+void AH_Rainbow(void)
+{
+  U16 Index;
+
+  // rainbow
+  Speed = 2;
+
+  // make the animation
+  strip.clear();
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
+    strip.setPixelColor(Index, Wheel((Offset1 + Index) * 3));
+  }
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
+  strip.show();
+
+  // make a Rainbow of color
+  Offset1++;
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_CrawlForward(void)
 {
   // crawling lights forward
   U16 Index;
@@ -285,6 +299,7 @@ void AH_CrawlForward        (void)
   }
 
   // calc the data
+  strip.clear();
   for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     if ( ++Offset1 >= DEF_Crawl_Length ) {
       Offset1 = 0;
@@ -292,16 +307,18 @@ void AH_CrawlForward        (void)
 
     if ( Offset1 == 0 ) {
       strip.setPixelColor(Index, Anim1_Colour);
-    } else {
-      strip.setPixelColor(Index, 0);
     }
+  }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
   }
 
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_CrawlBackwards      (void)
+void AH_CrawlBackwards(void)
 {
   // crawling lights backward
   U16 Index;
@@ -314,6 +331,7 @@ void AH_CrawlBackwards      (void)
   }
 
   // calc the data
+  strip.clear();
   for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     if ( Offset1 == 0 ) {
       Offset1 = DEF_Crawl_Length;
@@ -323,16 +341,18 @@ void AH_CrawlBackwards      (void)
 
     if ( Offset1 == 0 ) {
       strip.setPixelColor(Index, Anim1_Colour);
-    } else {
-      strip.setPixelColor(Index, 0);
     }
+  }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
   }
 
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_CrawlRandom         (void)
+void AH_CrawlRandom(void)
 {
   // crawling lights backward with random colour
   U16 Index;
@@ -345,6 +365,7 @@ void AH_CrawlRandom         (void)
   }
 
   // calc the data
+  strip.clear();
   for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     if ( Offset1 == 0 ) {
       Offset1 = DEF_Crawl_Length;
@@ -354,31 +375,38 @@ void AH_CrawlRandom         (void)
 
     if ( Offset1 == 0 ) {
       strip.setPixelColor(Index, random(0, 255),  random(0, 255),  random(0, 255));
-    } else {
-      strip.setPixelColor(Index, 0);
     }
+  }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
   }
 
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_Twinkle             (void)
+void AH_Twinkle(void)
 {
   // random -> twinkle
   U16 Index;
   Speed = 2;
 
   // calc the data
+  strip.clear();
   for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     strip.setPixelColor(Index, random(0, 255),  random(0, 255),  random(0, 255));
+  }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
   }
 
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_Fire                (void)
+void AH_Fire(void)
 {
   // Fire
   U16 Index;
@@ -387,6 +415,7 @@ void AH_Fire                (void)
   int r = 255;
   int g = r - 40;
   int b = 40;
+  strip.clear();
   for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     int flicker = random(0, 150);
     int r1 = r - flicker;
@@ -397,17 +426,23 @@ void AH_Fire                (void)
     if (b1 < 0) b1 = 0;
     strip.setPixelColor(Index, r1, g1, b1);
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_Alternate           (void)
+void AH_Alternate(void)
 {
   // alternate
   U16 Index;
   Speed = 4;
 
   Direction++;
+  strip.clear();
   for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     Direction++;
     if ( (Direction & 1) == 0) {
@@ -418,11 +453,16 @@ void AH_Alternate           (void)
       strip.setPixelColor(Index, Anim2_Colour);
     }
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_FillRandom          (void)
+void AH_FillRandom(void)
 {
   // Random Fill
   U16 Index;
@@ -450,13 +490,17 @@ void AH_FillRandom          (void)
         Found = 10;
       }
     } while ( ++Found < 10 ) ;
+
+    if ( OverlayNightRider == 1 ) {
+      Overlay_NightRider(0);
+    }
   }
 
   strip.show(); // display
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_RandomClear        (void)
+void AH_RandomClear(void)
 {
   // random colours with random clear
   Speed = 0;
@@ -466,11 +510,16 @@ void AH_RandomClear        (void)
   }
 
   strip.setPixelColor(random(0, strip.numPixels()), random(0, 255),  random(0, 255),  random(0, 255));
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(0);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_AllRed              (void)
+void AH_AllRed(void)
 {
   // all Red
   U16 Index;
@@ -479,15 +528,21 @@ void AH_AllRed              (void)
   if ( ++Offset1 > 255) {
     Offset1 = 0;
   }
-  for (Index = 0; Index < strip.numPixels(); Index++) {
 
+  strip.clear();
+  for ( Index = 0; Index < strip.numPixels(); Index++ ) {
     strip.setPixelColor(Index, Offset1, 0, 0);
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_AllGreen            (void)
+void AH_AllGreen(void)
 {
   // all Green
   U16 Index;
@@ -496,15 +551,21 @@ void AH_AllGreen            (void)
   if ( ++Offset1 > 255) {
     Offset1 = 0;
   }
-  for (Index = 0; Index < strip.numPixels(); Index++) {
 
+  strip.clear();
+  for (Index = 0; Index < strip.numPixels(); Index++) {
     strip.setPixelColor(Index, 0, Offset1, 0);
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_AllBlue             (void)
+void AH_AllBlue(void)
 {
   U16 Index;
 
@@ -514,14 +575,20 @@ void AH_AllBlue             (void)
     Offset1 = 0;
   }
 
+  strip.clear();
   for (Index = 0; Index < strip.numPixels(); Index++) {
     strip.setPixelColor(Index, 0, 0, Offset1);
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_MiddleFill          (void)
+void AH_MiddleFill(void)
 {
   // Light up the strip starting from the middle
   if ( Offset1++ > strip.numPixels() / 2 ) {
@@ -532,11 +599,16 @@ void AH_MiddleFill          (void)
 
   strip.setPixelColor(strip.numPixels() / 2 + Offset1, Anim1_Colour);
   strip.setPixelColor(strip.numPixels() / 2 - Offset1, Anim1_Colour);
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(0);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_EndFill             (void)
+void AH_EndFill(void)
 {
   // Light up the strip starting from the ends
   if ( Offset1++ > strip.numPixels() / 2 ) {
@@ -547,11 +619,16 @@ void AH_EndFill             (void)
 
   strip.setPixelColor(Offset1, Anim1_Colour);
   strip.setPixelColor(strip.numPixels() - Offset1, Anim1_Colour);
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(0);
+  }
+
   strip.show();
 }
 
 /////////////////////////////////////////////////////////////////////
-void AH_CrawlDual           (void)
+void AH_CrawlDual(void)
 {
   U16 Index;
 
@@ -592,10 +669,15 @@ void AH_CrawlDual           (void)
     }
   }
 
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
-//-FADE ALL LEDS THROUGH HSV RAINBOW
+/////////////////////////////////////////////////////////////////////
+// FADE ALL LEDS THROUGH HSV RAINBOW
 void AH_RainbowFade(void)
 {
   U16 Index;
@@ -606,12 +688,20 @@ void AH_RainbowFade(void)
   }
   int thisColor[3];
   HSVtoRGB(ihue, 255, 255, thisColor);
-  for (Index = 0 ; Index < strip.numPixels(); Index++ ) {
+
+  strip.clear();
+  for ( Index = 0 ; Index < strip.numPixels(); Index++ ) {
     strip.setPixelColor(Index, thisColor[0], thisColor[1], thisColor[2]);
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
+/////////////////////////////////////////////////////////////////////
 // LOOP HSV RAINBOW
 void AH_Rainbow_Loop(void)
 {
@@ -619,52 +709,70 @@ void AH_Rainbow_Loop(void)
   ihue = ihue + 10;
   int icolor[3];
 
-  if (idex >= strip.numPixels()) {
+  if ( idex >= strip.numPixels() ) {
     idex = 0;
   }
-  if (ihue >= 359) {
+  if ( ihue >= 359 ) {
     ihue = 0;
   }
 
   HSVtoRGB(ihue, 255, 255, icolor);
   strip.setPixelColor(idex, icolor[0], icolor[1], icolor[2]);
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(0);
+  }
+
   strip.show();
 }
 
-// //-POLICE LIGHTS (TWO COLOR SINGLE LED)
+/////////////////////////////////////////////////////////////////////
+//-POLICE LIGHTS (TWO COLOR SINGLE LED)
 void AH_Police_LightsONE(void)
 {
   idex++;
   if (idex >= strip.numPixels()) {
     idex = 0;
   }
+
   int idexR = idex;
   int idexB = antipodal_index(idexR);
-  for (int i = 0; i < strip.numPixels(); i++ ) {
-    if (i == idexR) {
+
+  strip.clear();
+  for ( int i = 0; i < strip.numPixels(); i++ ) {
+    if ( i == idexR ) {
       strip.setPixelColor(i, Anim1_Colour);
     }
-    else if (i == idexB) {
+    if ( i == idexB ) {
       strip.setPixelColor(i, Anim2_Colour);
     }
-    else {
-      strip.setPixelColor(i, 0, 0, 0);
-    }
   }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
   strip.show();
 }
 
+/////////////////////////////////////////////////////////////////////
 //-POLICE LIGHTS (TWO COLOR SOLID)
 void AH_police_lightsALL(void)
 {
-  idex++;
-  if (idex >= strip.numPixels()) {
+  if ( ++idex >= strip.numPixels() ) {
     idex = 0;
   }
+
   int idexR = idex;
   int idexB = antipodal_index(idexR);
+
   strip.setPixelColor(idexR, Anim1_Colour);
   strip.setPixelColor(idexB, Anim2_Colour);
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(0);
+  }
+
   strip.show();
 }
 
@@ -676,12 +784,50 @@ void AH_2ColourFader(void)
   float correctionFactor = 0.0f;
   float corFactorStep    = 1.0f / strip.numPixels();
 
+  strip.clear();
   for ( int Index = 0; Index < strip.numPixels(); Index++ ) {
     correctionFactor += corFactorStep;
     float red   = (Anim2_Colour_Red   - Anim1_Colour_Red  ) * correctionFactor + Anim1_Colour_Red;
     float green = (Anim2_Colour_Green - Anim1_Colour_Green) * correctionFactor + Anim1_Colour_Green;
     float blue  = (Anim2_Colour_Blue  - Anim1_Colour_Blue ) * correctionFactor + Anim1_Colour_Blue;
     strip.setPixelColor(Index, round(red), round(green), round(blue));
+  }
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
+  }
+
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_SineMover(void)
+{
+  Speed = 0; // each second
+
+  float CycleLength = (2.0f * 3.141592654f) / strip.numPixels();
+  float Sine;
+  float Cosine;
+
+  strip.clear();
+  if ( Offset1++ > strip.numPixels() ) {
+    Offset1 = 0;
+  }
+
+  Sine  = sin(Offset1 * CycleLength) * (strip.numPixels() / 2);
+  Sine += strip.numPixels() / 2;
+  strip.setPixelColor(round(Sine)  , Anim1_Colour);
+  strip.setPixelColor(round(Sine) - 1, Anim1_Colour);
+  strip.setPixelColor(round(Sine) + 1, Anim1_Colour);
+
+  Cosine  = cos(Offset1 * CycleLength) * (strip.numPixels() / 2);
+  Cosine += strip.numPixels() / 2;
+  strip.setPixelColor(round(Cosine)    , Anim2_Colour);
+  strip.setPixelColor(round(Cosine) - 1, Anim2_Colour);
+  strip.setPixelColor(round(Cosine) + 1, Anim2_Colour);
+
+  if ( OverlayNightRider == 1 ) {
+    Overlay_NightRider(1);
   }
 
   strip.show();
@@ -715,25 +861,34 @@ static ANIM_HANDLER * const AnimationHandlers[] = {
   &AH_Police_LightsONE,
   &AH_police_lightsALL,
   &AH_2ColourFader,
+  &AH_SineMover,
 };
 
 /////////////////////////////////////////////////////////////////////
 // update Animation
 void UpdateAnimation()
 {
-  // blank line to show new data easily to user
-  Serial.print  ("Update Animation: " );
-  Serial.println(Animation);
-
   if ( SpeedCounter++ >= Speed ) {
     SpeedCounter = 0;
 
     if ( Animation < ArrayElements(AnimationHandlers) ) {
+      Serial.print  ("Update Animation: " );
+      Serial.println(Animation);
+
       // ONLY run if is valid
       AnimationHandlers[Animation]();
     } else {
       // fix any problem
       Animation = 1;
+    }
+  } else {
+    // skip for OFF & Knight Rider animations
+    if ( OverlayNightRider == 1 ) {
+      if ( Animation > 1 ) {
+        // just update cylon
+        Overlay_NightRider(0);   // XOR Cylon to remove it, move the anim, XOR back in
+        strip.show();
+      }
     }
   }
 }
@@ -741,16 +896,16 @@ void UpdateAnimation()
 /////////////////////////////////////////////////////////////////////
 // this may cause the conenction to Blynk to fails... and the Blynk libs to just keep saying "Connection..."
 BLYNK_CONNECTED() {
-// Request Blynk server to re-send latest values for all pins
-// NOTE: This can cause the ESP8266 to crash !!
+  // Request Blynk server to re-send latest values for all pins
+  // NOTE: This can cause the ESP8266 to crash !!
   Serial.println("Sync All Blynk Values...");
   Blynk.syncAll();
 
   // If the ESP keeps crashing at boot, then uncomment JUST one line below to find which value sync is causing the problem
-//  Blynk.syncVirtual(V0);
-//  Blynk.syncVirtual(V1);
-//  Blynk.syncVirtual(V2);
-//  Blynk.syncVirtual(V3);
+  //  Blynk.syncVirtual(V0);
+  //  Blynk.syncVirtual(V1);
+  //  Blynk.syncVirtual(V2);
+  //  Blynk.syncVirtual(V3);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -762,6 +917,8 @@ BLYNK_WRITE(V1)
   Offset1      = 0;
   Offset2      = 0;
   Direction    = 0;
+  Direction_NR = 0;
+  Offset_NR    = 0;
 
   U16 Index;
   for ( Index = 0; Index < strip.numPixels(); Index++ ) { // fill array with 0
@@ -778,24 +935,36 @@ BLYNK_WRITE(V1)
 //  -->> Ensure you set the RGB Zebra vales to Min=1, Max=255
 BLYNK_WRITE(V2)
 {
-  // as colours
-  Serial.println("Get-R1");
-  Anim1_Colour_Red   = param[0].asInt();
-  Serial.println("Get-G1");
-  Anim1_Colour_Green = param[1].asInt();
-  Serial.println("Get-B1");
-  Anim1_Colour_Blue  = param[2].asInt();
+  Serial.println("New Animation Colour 1 is: ");
+  if ( param[0].isEmpty() == 0 ) {
+    Serial.print("Get-R1 :");
+    Anim1_Colour_Red   = param[0].asInt();
+  } else {
+    Serial.print("Get-R1 is Empty :");
+    Anim1_Colour_Red   = 0;
+  }
+  Serial.println(Anim1_Colour_Red);
+
+  if ( param[1].isEmpty() == 0 ) {
+    Serial.print("Get-G1: ");
+    Anim1_Colour_Green = param[1].asInt();
+  } else {
+    Serial.print("Get-G1 is Empty: ");
+    Anim1_Colour_Green = 0;
+  }
+  Serial.println(Anim1_Colour_Green);
+
+  if ( param[2].isEmpty() == 0 ) {
+    Serial.print("Get-B1: ");
+    Anim1_Colour_Blue  = param[2].asInt();
+  } else {
+    Serial.print("Get-B1 is Empty: ");
+    Anim1_Colour_Blue = 0;
+  }
+  Serial.println(Anim1_Colour_Blue );
 
   // combined
   Anim1_Colour = strip.Color(Anim1_Colour_Red, Anim1_Colour_Green, Anim1_Colour_Blue);
-
-  Serial.print("New Animation Colour 1 is: ");
-  Serial.print(" Red: ");
-  Serial.print(Anim1_Colour_Red);
-  Serial.print(" Green: ");
-  Serial.print(Anim1_Colour_Green);
-  Serial.print(" Blue: ");
-  Serial.println(Anim1_Colour_Blue );
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -803,24 +972,82 @@ BLYNK_WRITE(V2)
 //  -->> Ensure you set the RGB Zebra vales to Min=1, Max=255
 BLYNK_WRITE(V3)
 {
-  // as colours
-  Serial.println("Get-R2");
-  Anim2_Colour_Red   = param[0].asInt();
-  Serial.println("Get-G2");
-  Anim2_Colour_Green = param[1].asInt();
-  Serial.println("Get-B2");
-  Anim2_Colour_Blue  = param[2].asInt();
+  Serial.println("New Animation Colour 2 is: ");
+  if ( param[0].isEmpty() == 0 ) {
+    Serial.print("Get-R2 :");
+    Anim2_Colour_Red   = param[0].asInt();
+  } else {
+    Serial.print("Get-R2 is Empty :");
+    Anim2_Colour_Red   = 0;
+  }
+  Serial.println(Anim2_Colour_Red);
+
+  if ( param[1].isEmpty() == 0 ) {
+    Serial.print("Get-G2: ");
+    Anim2_Colour_Green = param[1].asInt();
+  } else {
+    Serial.print("Get-G2 is Empty: ");
+    Anim2_Colour_Green = 0;
+  }
+  Serial.println(Anim2_Colour_Green);
+
+  if ( param[2].isEmpty() == 0 ) {
+    Serial.print("Get-B2: ");
+    Anim2_Colour_Blue  = param[2].asInt();
+  } else {
+    Serial.print("Get-B2 is Empty: ");
+    Anim2_Colour_Blue = 0;
+  }
+  Serial.println(Anim1_Colour_Blue );
 
   // combined
   Anim2_Colour = strip.Color(Anim2_Colour_Red, Anim2_Colour_Green, Anim2_Colour_Blue);
+}
 
-  Serial.print("New Animation Colour 2 is: ");
-  Serial.print(" Red: ");
-  Serial.print(Anim2_Colour_Red);
-  Serial.print(" Green: ");
-  Serial.print(Anim2_Colour_Green);
-  Serial.print(" Blue: ");
-  Serial.println(Anim2_Colour_Blue );
+/////////////////////////////////////////////////////////////////////
+BLYNK_WRITE(V4)
+{
+  OverlayNightRider = param.asInt();
+
+  Serial.print  ("Overlay Night Rider: ");
+  Serial.println(OverlayNightRider);
+}
+
+/////////////////////////////////////////////////////////////////////
+// Change the colour of the Animation Night Rider Overlay
+//  -->> Ensure you set the RGB Zebra vales to Min=1, Max=255
+BLYNK_WRITE(V5)
+{
+  Serial.println("New Animation Colour NR is: ");
+  if ( param[0].isEmpty() == 0 ) {
+    Serial.print("Get-R-NR :");
+    AnimNR_Colour_Red   = param[0].asInt();
+  } else {
+    Serial.print("Get-R-NR is Empty :");
+    AnimNR_Colour_Red   = 0;
+  }
+  Serial.println(AnimNR_Colour_Red);
+
+  if ( param[1].isEmpty() == 0 ) {
+    Serial.print("Get-G-NR: ");
+    AnimNR_Colour_Green = param[1].asInt();
+  } else {
+    Serial.print("Get-G-NR is Empty: ");
+    AnimNR_Colour_Green = 0;
+  }
+  Serial.println(AnimNR_Colour_Green);
+
+  if ( param[2].isEmpty() == 0 ) {
+    Serial.print("Get-B2-NR: ");
+    AnimNR_Colour_Blue  = param[2].asInt();
+  } else {
+    Serial.print("Get-B-NR is Empty: ");
+    AnimNR_Colour_Blue = 0;
+  }
+  Serial.println(AnimNR_Colour_Blue );
+
+  // combined
+  AnimNR_Colour = strip.Color(AnimNR_Colour_Red, AnimNR_Colour_Green, AnimNR_Colour_Blue);
 }
 
 /////////////////////////////////////////////////////////////////////
