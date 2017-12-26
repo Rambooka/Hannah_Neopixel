@@ -88,7 +88,9 @@ U16 Direction    = 0;
 
 FLG OverlayNightRider   = 0;
 U16 Direction_NR        = 0;
-U16 Offset_NR           = 0;
+U16 Offset_NR           = 10;
+U16 LengthNR            = 10;
+U16 SpeedNR             = 2;
 U32 AnimNR_Colour       = 0;
 U08 AnimNR_Colour_Red   = 255;
 U08 AnimNR_Colour_Green = 0;
@@ -181,50 +183,49 @@ int antipodal_index(int i)
 /////////////////////////////////////////////////////////////////////
 void Overlay_NightRider(FLG JustMerge)
 {
-  Serial.print  ("Add Night Rider offset: ");
-  Serial.println(Offset_NR);
+  U16 Index;
+  
+  Serial.print  ("Add Night Rider Offset: ");
+  Serial.print  (Offset_NR);
+  Serial.print  (" Speed: ");
+  Serial.print  (SpeedNR);
+  Serial.print  (" Length: ");
+  Serial.println(LengthNR);
 
-  // cylon / Knight Rider
   if ( Direction_NR == 0 ) {
-    if ( ++Offset_NR >= strip.numPixels() ) {
-      Offset_NR    = strip.numPixels();
+    Offset_NR += SpeedNR;
+    if ( Offset_NR >= (strip.numPixels() - LengthNR) ) {
+      Offset_NR    = strip.numPixels() - LengthNR;
       Direction_NR = 1;
     }
   } else {
-    if ( --Offset_NR == 0 ) {
+    if ( Offset_NR <= SpeedNR ) {
       Offset_NR    = 0;
       Direction_NR = 0;
+    } else {
+      Offset_NR -= SpeedNR;
     }
   }
 
   // remove
   if ( JustMerge == 0 ) {
-    for ( int Index = 0; Index < strip.numPixels(); Index++) {
+    for ( Index = 0; Index < strip.numPixels(); Index++) {
       strip.setPixelColor(Index, strip.getPixelColor(Index) ^ PixelsNR[Index]);
     }
   }
 
   // clear old amination data
-  for ( int Index = 0; Index < strip.numPixels(); Index++) {
+  for ( Index = 0; Index < strip.numPixels(); Index++) {
     PixelsNR[Index] = 0;
   }
 
-  PixelsNR[Offset_NR] = AnimNR_Colour;
-  if ( Offset_NR > 1 ) {
-    PixelsNR[Offset_NR - 1] = AnimNR_Colour;
-  }
-  if ( Offset_NR < (strip.numPixels() - 1) ) {
-    PixelsNR[Offset_NR + 1] = AnimNR_Colour;
-  }
-  if ( Offset_NR > 2 ) {
-    PixelsNR[Offset_NR - 2] = AnimNR_Colour;
-  }
-  if ( Offset_NR < (strip.numPixels() - 2) ) {
-    PixelsNR[Offset_NR + 2] = AnimNR_Colour;
+  // build the new animation
+  for ( Index = 0; Index < LengthNR; Index++ ) {
+    PixelsNR[Offset_NR + Index] = AnimNR_Colour;
   }
 
   // merge
-  for ( int Index = 0; Index < strip.numPixels(); Index++) {
+  for ( Index = 0; Index < strip.numPixels(); Index++) {
     strip.setPixelColor(Index, strip.getPixelColor(Index) ^ PixelsNR[Index]);
   }
 }
@@ -1048,6 +1049,24 @@ BLYNK_WRITE(V5)
 
   // combined
   AnimNR_Colour = strip.Color(AnimNR_Colour_Red, AnimNR_Colour_Green, AnimNR_Colour_Blue);
+}
+
+/////////////////////////////////////////////////////////////////////
+BLYNK_WRITE(V6)
+{
+  LengthNR = param.asInt();
+
+  Serial.print  ("Overlay Night Rider length: ");
+  Serial.println(LengthNR);
+}
+
+/////////////////////////////////////////////////////////////////////
+BLYNK_WRITE(V7)
+{
+  SpeedNR = param.asInt();
+
+  Serial.print  ("Overlay Night Rider Speed: ");
+  Serial.println(SpeedNR);
 }
 
 /////////////////////////////////////////////////////////////////////
