@@ -184,7 +184,7 @@ int antipodal_index(int i)
 void Overlay_NightRider(FLG JustMerge)
 {
   U16 Index;
-  
+
   Serial.print  ("Add Night Rider Offset: ");
   Serial.print  (Offset_NR);
   Serial.print  (" Speed: ");
@@ -910,6 +910,31 @@ BLYNK_CONNECTED() {
 }
 
 /////////////////////////////////////////////////////////////////////
+// This is called for all virtual pins, that don't have BLYNK_WRITE handler
+BLYNK_WRITE_DEFAULT() {
+  Serial.print("input V");
+  Serial.print(request.pin);
+  Serial.println(":");
+  // Print all parameter values
+  for (auto i = param.begin(); i < param.end(); ++i) {
+    Serial.print("* ");
+    Serial.println(i.asString());
+  }
+}
+
+/////////////////////////////////////////////////////////////////////
+// This is called for all virtual pins, that don't have BLYNK_READ handler
+BLYNK_READ_DEFAULT() {
+  // Generate random response
+  int val = random(0, 100);
+  Serial.print("output V");
+  Serial.print(request.pin);
+  Serial.print(": ");
+  Serial.println(val);
+  Blynk.virtualWrite(request.pin, val);
+}
+
+/////////////////////////////////////////////////////////////////////
 BLYNK_WRITE(V1)
 {
   Animation    = param.asInt();  // first index = 1
@@ -936,73 +961,108 @@ BLYNK_WRITE(V1)
 //  -->> Ensure you set the RGB Zebra vales to Min=1, Max=255
 BLYNK_WRITE(V2)
 {
-  Serial.println("New Animation Colour 1 is: ");
-  if ( param[0].isEmpty() == 0 ) {
-    Serial.print("Get-R1 :");
-    Anim1_Colour_Red   = param[0].asInt();
-  } else {
-    Serial.print("Get-R1 is Empty :");
-    Anim1_Colour_Red   = 0;
-  }
-  Serial.println(Anim1_Colour_Red);
+  Serial.println("New Animation Colour 1");
 
-  if ( param[1].isEmpty() == 0 ) {
-    Serial.print("Get-G1: ");
-    Anim1_Colour_Green = param[1].asInt();
-  } else {
-    Serial.print("Get-G1 is Empty: ");
-    Anim1_Colour_Green = 0;
+  U16 Count = 0;
+  for (  auto Index = param.begin(); Index < param.end(); ++Index, Count++ ) {
+    Serial.print("Param ");
+    Serial.print(Count);
+    Serial.print(" : ");
+    Serial.print(Index.asString());
+    Serial.print(", ");
   }
-  Serial.println(Anim1_Colour_Green);
+  Serial.println();
 
-  if ( param[2].isEmpty() == 0 ) {
-    Serial.print("Get-B1: ");
-    Anim1_Colour_Blue  = param[2].asInt();
+  if ( Count != 3 ) {
+    Serial.print("Wrong number of parameters: ");
+    Serial.println(Count);
   } else {
-    Serial.print("Get-B1 is Empty: ");
-    Anim1_Colour_Blue = 0;
-  }
-  Serial.println(Anim1_Colour_Blue );
+    Serial.println("New Animation Colour 1 is: ");
+    if ( param[0].isEmpty() == 0 ) {
+      Serial.print("Get - R1 : ");
+      Anim1_Colour_Red   = param[0].asInt();
+    } else {
+      Serial.print("Get - R1 is Empty : ");
+      Anim1_Colour_Red   = 0;
+    }
+    Serial.println(Anim1_Colour_Red);
 
-  // combined
-  Anim1_Colour = strip.Color(Anim1_Colour_Red, Anim1_Colour_Green, Anim1_Colour_Blue);
+    if ( param[1].isEmpty() == 0 ) {
+      Serial.print("Get - G1: ");
+      Anim1_Colour_Green = param[1].asInt();
+    } else {
+      Serial.print("Get - G1 is Empty: ");
+      Anim1_Colour_Green = 0;
+    }
+    Serial.println(Anim1_Colour_Green);
+
+    if ( param[2].isEmpty() == 0 ) {
+      Serial.print("Get - B1: ");
+      Anim1_Colour_Blue  = param[2].asInt();
+    } else {
+      Serial.print("Get - B1 is Empty: ");
+      Anim1_Colour_Blue = 0;
+    }
+    Serial.println(Anim1_Colour_Blue );
+
+    // combined
+    Anim1_Colour = strip.Color(Anim1_Colour_Red, Anim1_Colour_Green, Anim1_Colour_Blue);
+  }
 }
+
 
 /////////////////////////////////////////////////////////////////////
 // Change the Secondary colour of the Animation
 //  -->> Ensure you set the RGB Zebra vales to Min=1, Max=255
 BLYNK_WRITE(V3)
 {
-  Serial.println("New Animation Colour 2 is: ");
-  if ( param[0].isEmpty() == 0 ) {
-    Serial.print("Get-R2 :");
-    Anim2_Colour_Red   = param[0].asInt();
-  } else {
-    Serial.print("Get-R2 is Empty :");
-    Anim2_Colour_Red   = 0;
-  }
-  Serial.println(Anim2_Colour_Red);
+  Serial.println("New Animation Colour 2");
 
-  if ( param[1].isEmpty() == 0 ) {
-    Serial.print("Get-G2: ");
-    Anim2_Colour_Green = param[1].asInt();
-  } else {
-    Serial.print("Get-G2 is Empty: ");
-    Anim2_Colour_Green = 0;
+  U16 Count = 0;
+  for (  auto Index = param.begin(); Index < param.end(); ++Index, Count++ ) {
+    Serial.print("Param ");
+    Serial.print(Count);
+    Serial.print(" : ");
+    Serial.print(Index.asString());
+    Serial.print(", ");
   }
-  Serial.println(Anim2_Colour_Green);
+  Serial.println();
 
-  if ( param[2].isEmpty() == 0 ) {
-    Serial.print("Get-B2: ");
-    Anim2_Colour_Blue  = param[2].asInt();
+  if ( Count != 3 ) {
+    Serial.print("Wrong number of parameters: ");
+    Serial.println(Count);
   } else {
-    Serial.print("Get-B2 is Empty: ");
-    Anim2_Colour_Blue = 0;
-  }
-  Serial.println(Anim1_Colour_Blue );
+    Serial.println("New Animation Colour 2 is: ");
+    if ( param[0].isEmpty() == 0 ) {
+      Serial.print("Get - R2 : ");
+      Anim2_Colour_Red   = param[0].asInt();
+    } else {
+      Serial.print("Get - R2 is Empty : ");
+      Anim2_Colour_Red   = 0;
+    }
+    Serial.println(Anim2_Colour_Red);
 
-  // combined
-  Anim2_Colour = strip.Color(Anim2_Colour_Red, Anim2_Colour_Green, Anim2_Colour_Blue);
+    if ( param[1].isEmpty() == 0 ) {
+      Serial.print("Get - G2: ");
+      Anim2_Colour_Green = param[1].asInt();
+    } else {
+      Serial.print("Get - G2 is Empty: ");
+      Anim2_Colour_Green = 0;
+    }
+    Serial.println(Anim2_Colour_Green);
+
+    if ( param[2].isEmpty() == 0 ) {
+      Serial.print("Get - B2: ");
+      Anim2_Colour_Blue  = param[2].asInt();
+    } else {
+      Serial.print("Get - B2 is Empty: ");
+      Anim2_Colour_Blue = 0;
+    }
+    Serial.println(Anim1_Colour_Blue );
+
+    // combined
+    Anim2_Colour = strip.Color(Anim2_Colour_Red, Anim2_Colour_Green, Anim2_Colour_Blue);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -1019,36 +1079,54 @@ BLYNK_WRITE(V4)
 //  -->> Ensure you set the RGB Zebra vales to Min=1, Max=255
 BLYNK_WRITE(V5)
 {
-  Serial.println("New Animation Colour NR is: ");
-  if ( param[0].isEmpty() == 0 ) {
-    Serial.print("Get-R-NR :");
-    AnimNR_Colour_Red   = param[0].asInt();
-  } else {
-    Serial.print("Get-R-NR is Empty :");
-    AnimNR_Colour_Red   = 0;
-  }
-  Serial.println(AnimNR_Colour_Red);
+  Serial.println("New Animation Colour NR");
 
-  if ( param[1].isEmpty() == 0 ) {
-    Serial.print("Get-G-NR: ");
-    AnimNR_Colour_Green = param[1].asInt();
-  } else {
-    Serial.print("Get-G-NR is Empty: ");
-    AnimNR_Colour_Green = 0;
+  U16 Count = 0;
+  for (  auto Index = param.begin(); Index < param.end(); ++Index, Count++ )
+  {
+    Serial.print("Param ");
+    Serial.print(Count);
+    Serial.print(" : ");
+    Serial.print(Index.asString());
+    Serial.print(", ");
   }
-  Serial.println(AnimNR_Colour_Green);
+  Serial.println();
 
-  if ( param[2].isEmpty() == 0 ) {
-    Serial.print("Get-B2-NR: ");
-    AnimNR_Colour_Blue  = param[2].asInt();
+  if ( Count != 3 ) {
+    Serial.print("Wrong number of parameters: ");
+    Serial.println(Count);
   } else {
-    Serial.print("Get-B-NR is Empty: ");
-    AnimNR_Colour_Blue = 0;
-  }
-  Serial.println(AnimNR_Colour_Blue );
+    Serial.println("New Animation Colour NR is: ");
+    if ( param[0].isEmpty() == 0 ) {
+      Serial.print("Get - R - NR : ");
+      AnimNR_Colour_Red   = param[0].asInt();
+    } else {
+      Serial.print("Get - R - NR is Empty : ");
+      AnimNR_Colour_Red   = 0;
+    }
+    Serial.println(AnimNR_Colour_Red);
 
-  // combined
-  AnimNR_Colour = strip.Color(AnimNR_Colour_Red, AnimNR_Colour_Green, AnimNR_Colour_Blue);
+    if ( param[1].isEmpty() == 0 ) {
+      Serial.print("Get - G - NR: ");
+      AnimNR_Colour_Green = param[1].asInt();
+    } else {
+      Serial.print("Get - G - NR is Empty: ");
+      AnimNR_Colour_Green = 0;
+    }
+    Serial.println(AnimNR_Colour_Green);
+
+    if ( param[2].isEmpty() == 0 ) {
+      Serial.print("Get - B2 - NR: ");
+      AnimNR_Colour_Blue  = param[2].asInt();
+    } else {
+      Serial.print("Get - B - NR is Empty: ");
+      AnimNR_Colour_Blue = 0;
+    }
+    Serial.println(AnimNR_Colour_Blue );
+
+    // combined
+    AnimNR_Colour = strip.Color(AnimNR_Colour_Red, AnimNR_Colour_Green, AnimNR_Colour_Blue);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -1086,6 +1164,7 @@ void setup()
 
   // Setup a function to be called every so often
   UpdateTimer.setInterval(100L, UpdateAnimation);
+
 }
 
 /////////////////////////////////////////////////////////////////////
