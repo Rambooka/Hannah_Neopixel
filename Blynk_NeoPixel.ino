@@ -45,6 +45,8 @@
 #define DEF_Crawl_Length  3
 #define DEF_Crawl_LengthB 4
 
+//#define DEF_ShowStatus
+
 #define BOTTOM_INDEX  0
 #define TOP_INDEX    (strip.numPixels() / 2)
 #define EVENODD      (strip.numPixels() % 2)
@@ -104,6 +106,24 @@ U16 ibright = 0;     //-BRIGHTNESS (0-255)
 U16 isat = 0;        //-SATURATION (0-255)
 U16 bouncedirection = 0;  //-SWITCH FOR COLOR BOUNCE (0-1)
 
+// Twinkle 2
+float redStates  [NeoNum];
+float blueStates [NeoNum];
+float greenStates[NeoNum];
+float Fade = 0.96;
+
+//Ripple variables
+int color;
+int center = 0;
+int step = -1;
+int maxSteps = 16;
+float fadeRate = 0.80;
+int diff;
+
+//background color
+uint32_t currentBg = random(256);
+uint32_t nextBg = currentBg;
+
 /////////////////////////////////////////////////////////////////////
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
@@ -117,6 +137,37 @@ uint32_t Wheel(byte WheelPos) {
     WheelPos -= 170;
     return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
   }
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+/////////////////////////////////////////////////////////////////////
+uint32_t WheelOP(byte WheelPos, float opacity)
+{
+  if (WheelPos < 85) {
+    return strip.Color((WheelPos * 3) * opacity, (255 - WheelPos * 3) * opacity, 0);
+  }
+  else if (WheelPos < 170) {
+    WheelPos -= 85;
+    return strip.Color((255 - WheelPos * 3) * opacity, 0, (WheelPos * 3) * opacity);
+  }
+  else {
+    WheelPos -= 170;
+    return strip.Color(0, (WheelPos * 3) * opacity, (255 - WheelPos * 3) * opacity);
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////
+int wrap(int step)
+{
+  if (step < 0) {
+    return NeoNum + step;
+  }
+  if (step > NeoNum - 1) {
+    return step - NeoNum;
+  }
+  return step;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -184,14 +235,14 @@ int antipodal_index(int i)
 void Overlay_NightRider(FLG JustMerge)
 {
   U16 Index;
-
+#ifdef DEF_ShowStatus
   Serial.print  ("Add Night Rider Offset: ");
   Serial.print  (Offset_NR);
   Serial.print  (" Speed: ");
   Serial.print  (SpeedNR);
   Serial.print  (" Length: ");
   Serial.println(LengthNR);
-
+#endif
   if ( Direction_NR == 0 ) {
     Offset_NR += SpeedNR;
     if ( Offset_NR >= (strip.numPixels() - LengthNR) ) {
@@ -835,6 +886,130 @@ void AH_SineMover(void)
 }
 
 /////////////////////////////////////////////////////////////////////
+void AH_Twinkle2 ()
+{
+  Speed = 0; // each second
+
+  if (random(25) == 1) {
+    uint16_t i = random(NeoNum);
+    if (redStates[i] < 1 && greenStates[i] < 1 && blueStates[i] < 1) {
+      redStates[i] = random(256);
+      greenStates[i] = random(256);
+      blueStates[i] = random(256);
+    }
+  }
+
+  for (uint16_t l = 0; l < NeoNum; l++) {
+    if (redStates[l] > 1 || greenStates[l] > 1 || blueStates[l] > 1) {
+      strip.setPixelColor(l, redStates[l], greenStates[l], blueStates[l]);
+
+      if (redStates[l] > 1) {
+        redStates[l] = redStates[l] * Fade;
+      } else {
+        redStates[l] = 0;
+      }
+
+      if (greenStates[l] > 1) {
+        greenStates[l] = greenStates[l] * Fade;
+      } else {
+        greenStates[l] = 0;
+      }
+
+      if (blueStates[l] > 1) {
+        blueStates[l] = blueStates[l] * Fade;
+      } else {
+        blueStates[l] = 0;
+      }
+
+    } else {
+      strip.setPixelColor(l, 0, 0, 0);
+    }
+  }
+
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_Ripple()
+{
+  if (currentBg == nextBg) {
+    nextBg = random(256);
+  }
+  else if (nextBg > currentBg) {
+    currentBg++;
+  } else {
+    currentBg--;
+  }
+  for (uint16_t l = 0; l < NeoNum; l++) {
+    strip.setPixelColor(l, WheelOP(currentBg, 0.1));
+  }
+
+  if (step == -1) {
+    center = random(NeoNum);
+    color = random(256);
+    step = 0;
+  }
+
+  if (step == 0) {
+    strip.setPixelColor(center, WheelOP(color, 1));
+    step ++;
+  }
+  else {
+    if (step < maxSteps) {
+      Serial.println(pow(fadeRate, step));
+
+      strip.setPixelColor(wrap(center + step), WheelOP(color, pow(fadeRate, step)));
+      strip.setPixelColor(wrap(center - step), WheelOP(color, pow(fadeRate, step)));
+      if (step > 3) {
+        strip.setPixelColor(wrap(center + step - 3), WheelOP(color, pow(fadeRate, step - 2)));
+        strip.setPixelColor(wrap(center - step + 3), WheelOP(color, pow(fadeRate, step - 2)));
+      }
+      step ++;
+    }
+    else {
+      step = -1;
+    }
+  }
+
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
+void AH_Ripple2()
+{
+  for (uint16_t l = 0; l < NeoNum; l++) {
+    strip.setPixelColor(l, 0, 0, 0);
+  }
+
+  if (step == -1) {
+    center = random(NeoNum);
+    color = random(256);
+    step = 0;
+  }
+
+  if (step == 0) {
+    strip.setPixelColor(center, WheelOP(color, 1));
+    step ++;
+  }
+  else {
+    if (step < maxSteps) {
+      strip.setPixelColor(wrap(center + step), WheelOP(color, pow(fadeRate, step)));
+      strip.setPixelColor(wrap(center - step), WheelOP(color, pow(fadeRate, step)));
+      if (step > 3) {
+        strip.setPixelColor(wrap(center + step - 3), WheelOP(color, pow(fadeRate, step - 2)));
+        strip.setPixelColor(wrap(center - step + 3), WheelOP(color, pow(fadeRate, step - 2)));
+      }
+      step ++;
+    }
+    else {
+      step = -1;
+    }
+  }
+
+  strip.show();
+}
+
+/////////////////////////////////////////////////////////////////////
 typedef void ANIM_HANDLER ( void );
 
 // state handler function pointers
@@ -863,6 +1038,9 @@ static ANIM_HANDLER * const AnimationHandlers[] = {
   &AH_police_lightsALL,
   &AH_2ColourFader,
   &AH_SineMover,
+  &AH_Twinkle2,
+  &AH_Ripple,
+  &AH_Ripple2,
 };
 
 /////////////////////////////////////////////////////////////////////
@@ -873,9 +1051,10 @@ void UpdateAnimation()
     SpeedCounter = 0;
 
     if ( Animation < ArrayElements(AnimationHandlers) ) {
+#ifdef DEF_ShowStatus
       Serial.print  ("Update Animation: " );
       Serial.println(Animation);
-
+#endif
       // ONLY run if is valid
       AnimationHandlers[Animation]();
     } else {
